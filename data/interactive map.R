@@ -4,12 +4,12 @@ library(sf)
 library(dplyr)
 
 # 读取数据
-pop_density_data <- read.csv("path_to_population_density_data.csv")
-forest_coverage_data <- read.csv("path_to_forest_coverage_data.csv")
-factory_data <- read.csv("path_to_oil_and_palm_factory_data.csv")
-
+#pop_density_data <- read.csv("path_to_population_density_data.csv")
+forest_coverage_data <- read.csv("yearly_forest_loss.csv")
+#factory_data <- read.csv("path_to_oil_and_palm_factory_data.csv")
+#language_data
 # 读取各省的边界数据
-province_shapefiles <- list.files("\\shp_files", pattern = "\\.shp$", full.names = TRUE)
+province_shapefiles <- list.files("shp_files", pattern = "\\.shp$", full.names = TRUE)
 province_boundaries <- lapply(province_shapefiles, function(x) {
   st_read(x)
 })
@@ -27,7 +27,7 @@ ui <- fluidPage(
     sidebarPanel(
       selectInput(
         "layer_selector",
-        "选择一个涂层:",
+        "Choose Type of Data:",
         choices = c("population" = "pop_density",
                     "forest loss" = "forest_coverage")
       ),
@@ -68,6 +68,5 @@ server <- function(input, output, session) {
       addPolygons(data = selected_data_sf, fillColor = "blue", fillOpacity = 0.5, weight = 1) %>%
       addPolygons(data = all_provinces, fillOpacity = 0, color = "black", weight = 2) %>%
       addMarkers(data = factory_data, lng = ~longitude, lat = ~latitude, popup = ~name)
-  })
-
-  shinyApp(ui, server)
+  })}
+shinyApp(ui, server)
