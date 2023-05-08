@@ -10,8 +10,7 @@ pop_density_data <- read.csv("net_migrant_long.csv")
 forest_coverage_data <- read.csv("yearly_forest_loss_density_long.csv")
 factory_data <- read.csv("RSPO_Palm_Oil_Mills.csv")
 language_data<-read.csv("language_freq.csv")
-
-language_data_sf <- st_as_sf(language_data, coords = c("longitude", "latitude"), crs = 4326) 
+language_data$amount <- as.numeric(language_data$amount)
 # 读取各省的边界数据
 # 读入8个省份的边界数据
 Aceh_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Aceh_boundary.shp")
@@ -38,32 +37,39 @@ SumateraUtara_boundary$province_name <- "SumateraUtara"
 all_provinces_boundary <- rbind(Aceh_boundary, Bengkulu_boundary, Jambi_boundary, Lampung_boundary,
                                 Riau_boundary, SumateraBarat_boundary, SumateraSelatan_boundary,
                                 SumateraUtara_boundary)
-
 all_provinces_boundary_with_center <- all_provinces_boundary %>%
   group_by(province_name) %>%
   summarise() %>%
   st_centroid() %>%
-  left_join(language_data_sf, by = "province_name") 
+  mutate(x = st_coordinates(geometry)[, 1],
+         y = st_coordinates(geometry)[, 2]) %>%
+  left_join(language_data, by = "province_name")
 # 将数据框与 all_provinces_boundary 数据框合
 
 pop_density_data <- left_join(pop_density_data, all_provinces_boundary, by = "province_name")
 forest_coverage_data <- left_join(forest_coverage_data, all_provinces_boundary, by = "province_name")
 
 factory_icon <- makeIcon(
-  iconUrl = "icons8-factory-48.png",
+  iconUrl = "icons8-palm-tree-50.png",
   iconWidth = 30, iconHeight = 30,
   iconAnchorX = 15, iconAnchorY = 15
 )
 
+language_icon <- makeIcon(
+  iconUrl = "icons8-speech-48.png",
+  iconWidth = 45, iconHeight = 45,
+  iconAnchorX = 20, iconAnchorY = 20
+)
+
 ui <- fluidPage(
-  titlePanel("Sumatra"),
+  titlePanel("Forest Loss, Migration, Factories and Endangered Ethnologues in Sumatra"),
   sidebarLayout(
     sidebarPanel(
       selectInput(
         "layer_selector",
         "Choose Type of Data:",
-        choices = c("population" = "pop_density",
-                    "forest loss" = "forest_coverage")
+        choices = c("Net Migration" = "pop_density",
+                    "Forest Loss" = "forest_coverage")
       ),
       conditionalPanel(
         condition = "input.layer_selector == 'pop_density'",
@@ -100,7 +106,7 @@ server <- function(input, output, session) {
   output$map <- renderLeaflet({
     leaflet() %>%
       addTiles() %>%
-      setView(lng = 102.5, lat = -2.5, zoom = 5) %>%
+      setView(lng = 102.5, lat = -2.5, zoom = 6) %>%
       # 添加图例（初始状态）
       addLegend(
         position = "bottomright",
@@ -141,10 +147,11 @@ server <- function(input, output, session) {
         data = all_provinces_boundary_with_center,
         lat = ~y,
         lng = ~x,
-        popup = ~as.character(value),
-        label = ~as.character(value),
-        labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "auto"),
-        group = "language_data_markers"
+        popup = ~as.character(amount),
+        label = ~as.character(amount),
+        labelOptions = labelOptions(noHide = TRUE, textOnly = TRUE, direction = "center", offset = c(0, 0)),
+        group = "language_data_markers",
+        icon = language_icon
       )%>%
       addLegend(
         position = "bottomright",
