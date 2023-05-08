@@ -2,11 +2,13 @@ library(shiny)
 library(leaflet)
 library(sf)
 library(dplyr)
+library(tidyverse)
+library(htmltools)
 
 # 读取数据
-pop_density_data <- read.csv("net_migrants.csv")
-forest_coverage_data <- read.csv("yearly_forest_loss_density.csv")
-#factory_data <- read.csv("path_to_oil_and_palm_factory_data.csv")
+pop_density_data <- read.csv("net_migrant_long.csv")
+forest_coverage_data <- read.csv("yearly_forest_loss_density_long.csv")
+factory_data <- read.csv("RSPO_Palm_Oil_Mills.csv")
 #language_data
 # 读取各省的边界数据
 # 读入8个省份的边界数据
@@ -19,31 +21,28 @@ SumateraBarat_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作
 SumateraSelatan_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/SumateraSelatan_boundary.shp")
 SumateraUtara_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/SumateraUtara_boundary.shp")
 
-# 新建数据框，包含所有省份的名称
-all_provinces <- data.frame(province_name = c("Aceh", "Bengkulu", "Jambi", "Lampung", 
-                                              "Riau", "SumateraBarat", "SumateraSelatan", "SumateraUtara"))
 
-# 将所有省份的名称与边界数据合并
-all_provinces_boundary <- all_provinces %>% 
-  left_join(Aceh_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(Bengkulu_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(Jambi_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(Lampung_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(Riau_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(SumateraBarat_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(SumateraSelatan_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
-all_provinces_boundary <- all_provinces_boundary %>% 
-  left_join(SumateraUtara_boundary, by = c("province_name" = "PROVINSI"), all = TRUE, fill = list(geometry = st_sfc()))
 
-# 根据需要，将 province_name 替换为你的 CSV 文件中的省份名称列
-pop_density_data <- left_join(all_provinces, pop_density_data, by = "province_name")
-forest_coverage_data <- left_join(all_provinces, forest_coverage_data, by = "province_name")
+Aceh_boundary$province_name <- "Aceh"
+Bengkulu_boundary$province_name <- "Bengkulu"
+Jambi_boundary$province_name <- "Jambi"
+Lampung_boundary$province_name <- "Lampung"
+Riau_boundary$province_name <- "Riau"
+SumateraBarat_boundary$province_name <- "SumateraBarat"
+SumateraSelatan_boundary$province_name <- "SumateraSelatan"
+SumateraUtara_boundary$province_name <- "SumateraUtara"
+
+# 合并所有省份的边界数据
+all_provinces_boundary <- rbind(Aceh_boundary, Bengkulu_boundary, Jambi_boundary, Lampung_boundary,
+                                Riau_boundary, SumateraBarat_boundary, SumateraSelatan_boundary,
+                                SumateraUtara_boundary)
+
+
+# 将数据框与 all_provinces_boundary 数据框合
+
+pop_density_data <- left_join(pop_density_data, all_provinces_boundary, by = "province_name")
+forest_coverage_data <- left_join(forest_coverage_data, all_provinces_boundary, by = "province_name")
+
 
 
 ui <- fluidPage(
@@ -56,42 +55,87 @@ ui <- fluidPage(
         choices = c("population" = "pop_density",
                     "forest loss" = "forest_coverage")
       ),
-      sliderInput(
-        "year_selector",
-        "Select Year:",
-        min = 2000, # 根据你的数据设置最小年份
-        max = 2021, # 根据你的数据设置最大年份
-        value = 2000,
-        step = 1,
-        animate = TRUE
+      conditionalPanel(
+        condition = "input.layer_selector == 'pop_density'",
+        sliderInput(
+          "year_selector_pop",
+          "Select Year for Population Density:",
+          min = 1980,
+          max = 2015,
+          value = 1980,
+          step = 5,
+          animate = TRUE
+        )
+      ),
+      conditionalPanel(
+        condition = "input.layer_selector == 'forest_coverage'",
+        sliderInput(
+          "year_selector_forest",
+          "Select Year for Forest Loss Density:",
+          min = 2001,
+          max = 2017,
+          value = 2001,
+          step = 1,
+          animate = TRUE
+        )
       )
     ),
     mainPanel(
-      leafletOutput("map")
+      leafletOutput("map", width = "100%",height = 800),# 设置宽度为 100%，使地图占据更大的空间
+      width = 9 # 调整 mainPanel 宽度
     )
   )
 )
-
 server <- function(input, output, session) {
   output$map <- renderLeaflet({
     leaflet() %>%
       addTiles() %>%
-      setView(lng = 102.5, lat = -2.5, zoom = 5)
+      setView(lng = 102.5, lat = -2.5, zoom = 5) %>%
+      # 添加图例（初始状态）
+      addLegend(
+        position = "bottomright",
+        pal = colorBin(palette = "YlOrRd", domain = NULL, na.color = "transparent", bins = 10),
+        values = NULL,
+        title = "Data Value",
+        opacity = 1,
+        group = "map_legend"
+      )
   })
   
-  observeEvent(c(input$layer_selector, input$year_selector), {
+  observeEvent(c(input$layer_selector, input$year_selector_pop, input$year_selector_forest), {
     selected_data <- switch(input$layer_selector,
-                            "pop_density" = pop_density_data,
-                            "forest_coverage" = forest_coverage_data)
-
-    selected_data <- selected_data %>% filter(year == input$year_selector)
+                            "pop_density" = {
+                              pop_density_data %>% dplyr::filter(year == input$year_selector_pop)
+                            },
+                            "forest_coverage" = {
+                              forest_coverage_data %>% dplyr::filter(year == input$year_selector_forest)
+                            })
     
     selected_data_sf <- st_as_sf(selected_data)
     
+    # 创建颜色映射
+    color_map <- colorBin(palette = "YlOrRd", domain = selected_data$value, na.color = "transparent", bins = 10)
+    
     leafletProxy("map") %>%
       clearShapes() %>%
-      addPolygons(data = selected_data_sf, fillColor = "blue", fillOpacity = 0.5, weight = 1) %>%
-      addPolygons(data = all_provinces, fillOpacity = 0, color = "black", weight = 2) %>%
-      addMarkers(data = factory_data, lng = ~longitude, lat = ~latitude, popup = ~name)
-  })}
+      addPolygons(
+        data = selected_data_sf,
+        fillColor = ~color_map(value), 
+        fillOpacity = 0.5,
+        weight = 1
+      ) %>%
+      addPolygons(data = all_provinces_boundary, fillOpacity = 0, color = "black", weight = 2) %>%
+      addMarkers(data = factory_data, lng = ~longitude, lat = ~latitude, popup = 'palm',clusterOptions = markerClusterOptions()) %>%
+      removeControl(layerId="map_legend") %>%
+      addLegend(
+        position = "bottomright",
+        pal = color_map,
+        values = selected_data$value,
+        title = "Data Value",
+        opacity = 1,
+        group = "map_legend",
+        layerId ="map_legend"
+      )})
+}
+
 shinyApp(ui, server)
