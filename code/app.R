@@ -4,14 +4,13 @@ library(sf)
 library(dplyr)
 library(tidyverse)
 library(htmltools)
-# 读取数据
+# read numeric data
 pop_density_data <- read.csv("net_migrant_long.csv")
 forest_coverage_data <- read.csv("yearly_forest_loss_density_long.csv")
 factory_data <- read.csv("RSPO_Palm_Oil_Mills.csv")
 language_data<-read.csv("language_freq.csv")
 language_data$amount <- as.numeric(language_data$amount)
-# 读取各省的边界数据
-# 读入8个省份的边界数据
+# read boundary data
 Aceh_boundary <- st_read("shp_files/Aceh_boundary.shp")
 Bengkulu_boundary <- st_read("shp_files/Bengkulu_boundary.shp")
 Jambi_boundary <- st_read("shp_files/Jambi_boundary.shp")
@@ -32,7 +31,7 @@ SumateraBarat_boundary$province_name <- "SumateraBarat"
 SumateraSelatan_boundary$province_name <- "SumateraSelatan"
 SumateraUtara_boundary$province_name <- "SumateraUtara"
 
-# 合并所有省份的边界数据
+# combine the boundary data of all provinces 
 all_provinces_boundary <- rbind(Aceh_boundary, Bengkulu_boundary, Jambi_boundary, Lampung_boundary,
                                 Riau_boundary, SumateraBarat_boundary, SumateraSelatan_boundary,
                                 SumateraUtara_boundary)
@@ -43,11 +42,12 @@ all_provinces_boundary_with_center <- all_provinces_boundary %>%
   mutate(x = st_coordinates(geometry)[, 1],
          y = st_coordinates(geometry)[, 2]) %>%
   left_join(language_data, by = "province_name")
-# 将数据框与 all_provinces_boundary 数据框合
+# combine all_provinces_boundary with numeric data
 
 pop_density_data <- left_join(pop_density_data, all_provinces_boundary, by = "province_name")
 forest_coverage_data <- left_join(forest_coverage_data, all_provinces_boundary, by = "province_name")
 
+# define specific icon for marker
 factory_icon <- makeIcon(
   iconUrl = "icons8-palm-tree-50.png",
   iconWidth = 30, iconHeight = 30,
@@ -60,6 +60,8 @@ language_icon <- makeIcon(
   iconAnchorX = 20, iconAnchorY = 20
 )
 
+
+# define ui pages
 ui <- fluidPage(
   titlePanel("Forest Loss, Migration, Factories and Endangered Ethnologues in Sumatera"),
   sidebarLayout(
@@ -96,8 +98,9 @@ ui <- fluidPage(
       )
     ),
     mainPanel(
-      leafletOutput("map", width = "100%",height = 800),# 设置宽度为 100%，使地图占据更大的空间
-      width = 9 # 调整 mainPanel 宽度
+      # set width 100% for a larger map
+      leafletOutput("map", width = "100%",height = 800),
+      width = 9 
     )
   )
 )
@@ -106,7 +109,7 @@ server <- function(input, output, session) {
     leaflet() %>%
       addTiles() %>%
       setView(lng = 102.5, lat = -2.5, zoom = 6) %>%
-      # 添加图例（初始状态）
+      # add default legend）
       addLegend(
         position = "bottomright",
         pal = colorBin(palette = "YlOrRd", domain = NULL, na.color = "transparent", bins = 10),
@@ -128,7 +131,7 @@ server <- function(input, output, session) {
     
     selected_data_sf <- st_as_sf(selected_data)
     
-    # 创建颜色映射
+    # make a color projection
     color_map <- colorBin(palette = "YlOrRd", domain = selected_data$value, na.color = "transparent", bins = 10)
     
     leafletProxy("map") %>%
