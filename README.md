@@ -1,3 +1,5 @@
 # AP-J-S-Proj
-                                                              Forest Loss in Indonesia
+                                         Interactive Map of Forest Loss in Indonesia
+                                        PLease visit https://jiahaowei-projects.shinyapps.io/data/ for the app
+                                                
                                                              
