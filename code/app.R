@@ -4,7 +4,6 @@ library(sf)
 library(dplyr)
 library(tidyverse)
 library(htmltools)
-
 # 读取数据
 pop_density_data <- read.csv("net_migrant_long.csv")
 forest_coverage_data <- read.csv("yearly_forest_loss_density_long.csv")
@@ -13,14 +12,14 @@ language_data<-read.csv("language_freq.csv")
 language_data$amount <- as.numeric(language_data$amount)
 # 读取各省的边界数据
 # 读入8个省份的边界数据
-Aceh_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Aceh_boundary.shp")
-Bengkulu_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Bengkulu_boundary.shp")
-Jambi_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Jambi_boundary.shp")
-Lampung_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Lampung_boundary.shp")
-Riau_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/Riau_boundary.shp")
-SumateraBarat_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/SumateraBarat_boundary.shp")
-SumateraSelatan_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/SumateraSelatan_boundary.shp")
-SumateraUtara_boundary <- st_read("/Users/weijiahao/Dropbox/PC/Desktop/统计作业/5293/AP-J-S-Proj/data/shp_files/SumateraUtara_boundary.shp")
+Aceh_boundary <- st_read("shp_files/Aceh_boundary.shp")
+Bengkulu_boundary <- st_read("shp_files/Bengkulu_boundary.shp")
+Jambi_boundary <- st_read("shp_files/Jambi_boundary.shp")
+Lampung_boundary <- st_read("shp_files/Lampung_boundary.shp")
+Riau_boundary <- st_read("shp_files/Riau_boundary.shp")
+SumateraBarat_boundary <- st_read("shp_files/SumateraBarat_boundary.shp")
+SumateraSelatan_boundary <- st_read("shp_files/SumateraSelatan_boundary.shp")
+SumateraUtara_boundary <- st_read("shp_files/SumateraUtara_boundary.shp")
 
 
 
@@ -62,7 +61,7 @@ language_icon <- makeIcon(
 )
 
 ui <- fluidPage(
-  titlePanel("Forest Loss, Migration, Factories and Endangered Ethnologues in Sumatra"),
+  titlePanel("Forest Loss, Migration, Factories and Endangered Ethnologues in Sumatera"),
   sidebarLayout(
     sidebarPanel(
       selectInput(

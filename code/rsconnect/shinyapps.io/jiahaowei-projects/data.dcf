@@ -1,0 +1,13 @@
+name: data
+title: data
+username:
+account: jiahaowei-projects
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 9051847
+bundleId: 7186996
+url: https://jiahaowei-projects.shinyapps.io/data/
+when: 1683515512.13768
+lastSyncTime: 1683515512.13769
+asMultiple: FALSE
+asStatic: FALSE
